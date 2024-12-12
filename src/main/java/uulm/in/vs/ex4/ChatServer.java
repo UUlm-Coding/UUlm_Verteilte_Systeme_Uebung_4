@@ -170,7 +170,7 @@ public class ChatServer {
          */
         @Override
         public void listUsers(GetUsersMessage request, StreamObserver<UserInfoMessage> responseObserver) {
-            if (users.get(request.getUsername()) != request.getSessionID()) {
+            if (!users.get(request.getUsername()).equals(request.getSessionID())) {
                 responseObserver.onError(Status.PERMISSION_DENIED.asRuntimeException());
             }
 
