@@ -11,42 +11,33 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * ChatServer is a gRPC-based server implementation that provides chat functionalities
- * such as user login and logout. It handles client requests using gRPC mechanisms and
- * maintains a thread-safe user session state using a ConcurrentHashMap. The server listens
- * on a specified port and handles requests concurrently, making it suitable for real-time
- * chat applications.
+ * Represents a chat server that handles user sessions, chat functionalities, and user interactions
+ * using gRPC services. Contains static inner classes and methods for managing login, logout, streaming
+ * chat messages, listing users, and server initialization.
  */
 public class ChatServer {
     /**
-     * A thread-safe map instance to maintain user information, where the key represents
-     * the user identifier (e.g., username) and the value represents associated user data
-     * or status within the chat application.
-     * <p>
-     * This map ensures concurrency safety for operations such as addition, removal, and
-     * updates, making it suitable for multi-threaded scenarios typically encountered in
-     * real-time chat server environments.
+     * A thread-safe map used for storing user information in the chat server.
+     * Keys and values represent usernames and their associated data.
      */
     private final static ConcurrentHashMap<String, String> users = new ConcurrentHashMap<>();
 
+    /**
+     * A thread-safe map that stores active chat streams associated with user identifiers.
+     */
     private final static ConcurrentHashMap<String, StreamObserver<ChatMessages>> activeChatStreams = new ConcurrentHashMap<>();
 
     /**
-     * ChatService is a gRPC service implementation for handling chat functionalities including
-     * user login and logout. It extends ChatGrpc.ChatImplBase and overrides its methods to provide
-     * the core server-side logic for client requests.
-     * <p>
-     * The service maintains a mapping of usernames to unique session IDs to track active users
-     * and ensure session consistency during the lifetime of the server.
+     * ChatService provides various gRPC methods for user login, logout, chat messaging,
+     * and listing registered users.
      */
     public static class ChatService extends ChatImplBase {
         /**
-         * Handles the login request for a user. If the username is available, the user is assigned
-         * a unique session ID and the login response is sent. Otherwise, an error is returned
-         * indicating that the username is already taken.
+         * Handles the login request for a user. If the username is not already registered, a session ID is created
+         * and returned in the response. If the username exists, the login is denied.
          *
-         * @param request the login request, containing the username of the user attempting to log in
-         * @param responseObserver the stream observer to send the login response or any errors
+         * @param request the login request containing the username
+         * @param responseObserver the stream observer to send the login response
          */
         @Override
         public void login(LoginRequest request, StreamObserver<LoginResponse> responseObserver) {
@@ -66,11 +57,10 @@ public class ChatServer {
         }
 
         /**
-         * Handles the logout request for a user. If the user is found in the system, their session is
-         * terminated and a logout response is sent. If the user is not found, an error is returned.
+         * Handles the logout request for a user.
          *
-         * @param request the logout request containing the username of the user attempting to log out
-         * @param responseObserver the stream observer to send the logout response or any errors
+         * @param request the logout request containing session information
+         * @param responseObserver the stream observer used to send the logout response
          */
         @Override
         public void logout(LogoutRequest request, StreamObserver<LogoutResponse> responseObserver) {
@@ -89,11 +79,10 @@ public class ChatServer {
         }
 
         /**
-         * Provides a bidirectional streaming method for handling chat messages between users. Clients send
-         * their messages through this stream, and it broadcasts them to other active participants in the chat.
+         * Establishes a bidirectional streaming chat session between the client and server.
          *
-         * @param responseObserver the stream observer used to send chat messages to the client
-         * @return a StreamObserver used to receive messages from the client
+         * @param responseObserver the stream observer used for sending chat messages to the client
+         * @return a stream observer for handling client messages
          */
         @Override
         public StreamObserver<ClientMessage> chatStream(StreamObserver<ChatMessages> responseObserver) {
@@ -102,11 +91,9 @@ public class ChatServer {
                 String username = null;
 
                 /**
-                 * Processes incoming client messages received through the bidirectional stream.
-                 * Validates the client's session, adds their session to the active streams if not already present,
-                 * and broadcasts the message to other active participants in the chat.
+                 * Processes the incoming client message and manages the streaming session.
                  *
-                 * @param clientMessage the message sent by the client that contains the username, session ID, and message content
+                 * @param clientMessage the message sent by the client, containing the username, session ID, and message content
                  */
                 @Override
                 public void onNext(ClientMessage clientMessage) {
@@ -133,11 +120,9 @@ public class ChatServer {
                 }
 
                 /**
-                 * Handles errors that occur during the bidirectional streaming session.
-                 * If a session ID is associated with the current stream, the session is removed
-                 * from the list of active chat streams to clean up resources.
+                 * Handles an error that occurs during the streaming session.
                  *
-                 * @param throwable the exception or error that triggered this method
+                 * @param throwable the error that occurred
                  */
                 @Override
                 public void onError(Throwable throwable) {
@@ -147,10 +132,8 @@ public class ChatServer {
                 }
 
                 /**
-                 * Completes the bidirectional streaming session for the client.
-                 * If the session ID is associated with the current stream, it is removed
-                 * from the list of active chat streams to ensure resources are cleaned up.
-                 * Once cleanup is complete, signals to the client that the stream has ended successfully.
+                 * Completes the chat streaming session by removing the session from active streams
+                 * and notifying the client that the stream is complete.
                  */
                 @Override
                 public void onCompleted() {
@@ -163,10 +146,10 @@ public class ChatServer {
         }
 
         /**
-         * Provides a list of all currently registered users.
+         * Lists all users currently registered in the system.
          *
-         * @param request the request message for retrieving the user list
-         * @param responseObserver the stream observer used to send the response containing the list of users
+         * @param request the request containing user credentials for validation
+         * @param responseObserver the stream observer to send the list of users
          */
         @Override
         public void listUsers(GetUsersMessage request, StreamObserver<UserInfoMessage> responseObserver) {
@@ -182,12 +165,9 @@ public class ChatServer {
     }
 
     /**
-     * Entry point for the ChatServer program. This method initializes and starts the gRPC server,
-     * registering the ChatService to handle client requests. The server listens on the specified
-     * port and awaits termination. A shutdown hook is also added to gracefully stop the server
-     * when the program is terminated.
+     * Entry point of the application.
      *
-     * @param args the command-line arguments passed to the program
+     * @param args command-line arguments
      */
     public static void main(String[] args) {
         try {
@@ -203,7 +183,7 @@ public class ChatServer {
             // Wait for the server to terminate
             server.awaitTermination();
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            System.err.println("Server terminated unexpectedly: " + e.getMessage());
         }
     }
 }
