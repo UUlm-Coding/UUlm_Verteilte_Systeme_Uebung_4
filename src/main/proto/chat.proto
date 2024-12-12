@@ -36,8 +36,9 @@ message LogoutResponse {
 }
 
 message ClientMessage {
-  string sessionID = 1;
-  string message = 2;
+  string username = 1;
+  string sessionID = 2;
+  string message = 3;
 }
 
 message ChatMessages {
