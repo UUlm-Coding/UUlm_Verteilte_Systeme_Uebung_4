@@ -69,7 +69,7 @@ public class ChatClient {
     public void sendMessage(String message) {
         ClientMessage request = ClientMessage.newBuilder().setUsername(username).setSessionID(sessionID).setMessage(message).build();
         System.out.println("Message send -> [" + username + "]: " + message);
-        clientMessageStreamObserver.onNext(request);
+        if (clientMessageStreamObserver != null) clientMessageStreamObserver.onNext(request);
     }
 
     private void createChatStream() {
