@@ -48,7 +48,7 @@ public class ChatClient {
             return false;
         }
 
-        LogoutRequest request = LogoutRequest.newBuilder().setSessionID(sessionID).build();
+        LogoutRequest request = LogoutRequest.newBuilder().setSessionID(sessionID).setUsername(username).build();
         LogoutResponse response = blockingStub.logout(request);
         if (response.getStatus() == StatusCode.OK) {
             sessionID = null;
@@ -59,7 +59,7 @@ public class ChatClient {
     }
 
     public void listUsers() {
-        GetUsersMessage request = GetUsersMessage.newBuilder().build();
+        GetUsersMessage request = GetUsersMessage.newBuilder().setUsername(username).setSessionID(sessionID).build();
         UserInfoMessage response = blockingStub.listUsers(request);
         for (String user : response.getUsersList()) {
             System.out.println(user);
@@ -68,6 +68,7 @@ public class ChatClient {
 
     public void sendMessage(String message) {
         ClientMessage request = ClientMessage.newBuilder().setUsername(username).setSessionID(sessionID).setMessage(message).build();
+        System.out.println("Message send -> [" + username + "]: " + message);
         clientMessageStreamObserver.onNext(request);
     }
 
@@ -75,7 +76,7 @@ public class ChatClient {
         chatMessagesStreamObserver = new StreamObserver<ChatMessages>() {
             @Override
             public void onNext(ChatMessages value) {
-                System.out.println("[" + value.getUsername() + "]: " + value.getMessage());
+                System.out.println(username + " -> [" + value.getUsername() + "]: " + value.getMessage());
             }
 
             @Override
@@ -90,6 +91,7 @@ public class ChatClient {
         };
 
         clientMessageStreamObserver = asyncStub.chatStream(chatMessagesStreamObserver);
+        sendMessage("Joined chat as " + username);
     }
 
     public static void main(String[] args) {

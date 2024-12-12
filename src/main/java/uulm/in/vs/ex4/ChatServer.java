@@ -75,8 +75,8 @@ public class ChatServer {
         @Override
         public void logout(LogoutRequest request, StreamObserver<LogoutResponse> responseObserver) {
             String sessionID = request.getSessionID();
-            String username = users.get(sessionID);
-            if (!users.contains(username) || !sessionID.equals(users.get(username))) {
+            String username = request.getUsername();
+            if (!sessionID.equals(users.get(username))) {
                 LogoutResponse response = LogoutResponse.newBuilder().setStatus(StatusCode.FAILED).build();
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
@@ -170,8 +170,9 @@ public class ChatServer {
          */
         @Override
         public void listUsers(GetUsersMessage request, StreamObserver<UserInfoMessage> responseObserver) {
-            if (users.get(request.getUsername()) != request.getSessionID()) {
+            if (!users.get(request.getUsername()).equals(request.getSessionID())) {
                 responseObserver.onError(Status.PERMISSION_DENIED.asRuntimeException());
+                return;
             }
 
             UserInfoMessage userInfoMessage = UserInfoMessage.newBuilder().addAllUsers(users.keySet()).build();
