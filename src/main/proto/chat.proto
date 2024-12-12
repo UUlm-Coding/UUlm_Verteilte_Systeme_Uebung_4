@@ -46,7 +46,10 @@ message ChatMessages {
   string message = 2;
 }
 
-message GetUsersMessage {}
+message GetUsersMessage {
+  string username = 1;
+  string sessionID = 2;
+}
 
 message UserInfoMessage {
   repeated string users = 1;

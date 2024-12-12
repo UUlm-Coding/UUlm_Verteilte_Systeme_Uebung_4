@@ -170,6 +170,10 @@ public class ChatServer {
          */
         @Override
         public void listUsers(GetUsersMessage request, StreamObserver<UserInfoMessage> responseObserver) {
+            if (users.get(request.getUsername()) != request.getSessionID()) {
+                responseObserver.onError(Status.PERMISSION_DENIED.asRuntimeException());
+            }
+
             UserInfoMessage userInfoMessage = UserInfoMessage.newBuilder().addAllUsers(users.keySet()).build();
             responseObserver.onNext(userInfoMessage);
             responseObserver.onCompleted();
