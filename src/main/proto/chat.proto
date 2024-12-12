@@ -35,7 +35,7 @@ message LogoutResponse {
 }
 
 message ClientMessage {
-  string username = 1;
+  string sessionID = 1;
   string message = 2;
 }
 
